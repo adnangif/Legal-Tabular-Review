@@ -11,11 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // First drop the old unique constraint if it exists
+        Schema::table('ltr_field_reviews', function (Blueprint $table) {
+            $table->dropUnique('ltr_unique_current_review');
+        });
+
+        // Then add the virtual column and the new unique constraint
         Schema::table('ltr_field_reviews', function (Blueprint $table) {
             $table->string('current_key')
                 ->nullable()
-                ->storedAs("CASE WHEN is_current = 1 THEN CONCAT(document_id,'-',field_template_id) ELSE NULL END");
-            $table->dropUnique('ltr_unique_current_review');
+                ->virtualAs("CASE WHEN is_current = 1 THEN CONCAT(document_id,'-',field_template_id) ELSE NULL END");
             $table->unique('current_key', 'ltr_unique_current_review');
         });
     }
@@ -25,6 +30,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('ltr_field_reviews', function (Blueprint $table) {
+            $table->dropUnique('ltr_unique_current_review');
+            $table->dropColumn('current_key');
+        });
+
+        Schema::table('ltr_field_reviews', function (Blueprint $table) {
+            $table->unique(['document_id', 'field_template_id', 'is_current'], 'ltr_unique_current_review');
+        });
     }
 };
