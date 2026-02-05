@@ -43,7 +43,6 @@ class ExportController extends Controller
             return response()->streamDownload(function () use ($dataset) {
                 $out = fopen('php://output', 'w');
 
-                // UTF-8 BOM helps Excel open CSV correctly
                 fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
                 fputcsv($out, $dataset['header']);
@@ -87,17 +86,13 @@ class ExportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Comparison');
 
-        // Header row
         $sheet->fromArray($dataset['header'], null, 'A1');
 
-        // Data rows
-        $i = 2;
         foreach ($dataset['rows'] as $row) {
             $sheet->fromArray($row, null, 'A' . $i);
             $i++;
         }
 
-        // Basic autosize
         $colCount = count($dataset['header']);
         for ($col = 1; $col <= $colCount; $col++) {
             $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($col))->setAutoSize(true);
@@ -133,12 +128,10 @@ class ExportController extends Controller
 
         $comparison = $comparisonService->build($docIds, $runId);
 
-        // ✅ wide export payload
         $wide = $exportService->buildWideExport($comparison, $filters);
 
         $spreadsheet = new Spreadsheet();
 
-        // Sheet 1: Comparison (wide)
         $sheet1 = $spreadsheet->getActiveSheet();
         $sheet1->setTitle('Comparison');
 
@@ -152,14 +145,12 @@ class ExportController extends Controller
             $r++;
         }
 
-        // Autosize columns for sheet 1
         $colCount = count($wide['comparison_header']);
         for ($i = 1; $i <= $colCount; $i++) {
             $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
             $sheet1->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
-        // Sheet 2: Citations
         $sheet2 = $spreadsheet->createSheet();
         $sheet2->setTitle('Citations');
 
@@ -180,7 +171,6 @@ class ExportController extends Controller
         $sheetMeta = $spreadsheet->createSheet();
         $sheetMeta->setTitle('Meta');
 
-        // Write meta header + rows
         $sheetMeta->fromArray($wide['meta_header'], null, 'A1');
 
         $r = 2;
@@ -189,14 +179,12 @@ class ExportController extends Controller
             $r++;
         }
 
-        // Hide sheet
         $sheetMeta->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
 
         $conflicts = $wide['row_conflicts'] ?? [];
         $comparisonRowCount = count($wide['comparison_rows']);
         $comparisonColCount = count($wide['comparison_header']);
 
-        // Styles
         $styleConflictRow = [
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
@@ -218,23 +206,18 @@ class ExportController extends Controller
             ],
         ];
 
-        // Iterate over data cells only (exclude header row 1)
         for ($ri = 0; $ri < $comparisonRowCount; $ri++) {
             $excelRow = $ri + 2; // data starts at row 2
             $isConflict = !empty($conflicts[$ri]);
 
-            // If conflict, highlight whole row across all columns
             if ($isConflict) {
                 $lastColLetter = Coordinate::stringFromColumnIndex($comparisonColCount);
                 $sheet1->getStyle("A{$excelRow}:{$lastColLetter}{$excelRow}")->applyFromArray($styleConflictRow);
             }
 
-            // Now cell-level styling based on meta status
-            // Data columns start at C (1:A FieldKey, 2:B Field, 3+: documents)
             for ($ci = 3; $ci <= $comparisonColCount; $ci++) {
                 $colLetter = Coordinate::stringFromColumnIndex($ci);
 
-                // Read meta cell: status|source|confidence
                 $metaVal = (string) $sheetMeta->getCell("{$colLetter}{$excelRow}")->getValue();
                 $status = strtolower(trim(explode('|', $metaVal)[0] ?? ''));
 
@@ -248,7 +231,6 @@ class ExportController extends Controller
 
 
 
-        // Sheet 3: Summary
         $sheet3 = $spreadsheet->createSheet();
         $sheet3->setTitle('Summary');
 
@@ -289,7 +271,6 @@ class ExportController extends Controller
 
         $sheet3->fromArray($lines, null, 'A1');
 
-        // Autosize columns for summary (A and B)
         foreach (['A', 'B'] as $col) {
             $sheet3->getColumnDimension($col)->setAutoSize(true);
         }

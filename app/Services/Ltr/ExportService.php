@@ -158,7 +158,6 @@ class ExportService
                     continue;
                 }
 
-                // min_confidence only makes sense for extraction confidence
                 if ($minConfidence !== null) {
                     $conf = $cell['confidence'];
                     if ($conf === null || (float) $conf < $minConfidence) {
@@ -221,7 +220,6 @@ class ExportService
         $onlyConflicts = (bool) ($filters['only_conflicts'] ?? false);
         $includeMissing = (bool) ($filters['include_missing'] ?? true);
 
-        // Header: Field Key, Field, then each document title
         $docTitles = $documents->map(fn ($d) => $d->title ?: $d->original_filename ?: ('Doc #' . $d->id))->values();
         $comparisonHeader = array_merge(['Field Key', 'Field'], $docTitles->all());
         $metaHeader = $comparisonHeader; // same shape as comparison
@@ -278,11 +276,9 @@ class ExportService
                 $totalConflicts++;
             }
 
-            // Build one wide row per field and append once after document iteration.
             $comparisonRow = [$fieldKey, $fieldLabel];
             $metaRow = [$fieldKey, $fieldLabel];
 
-            // Ensure document column order matches $docIds order used by ComparisonService
             foreach ($documents as $docId => $doc) {
                 $cell = $fieldRow->cells[(string) $docId] ?? null;
 
@@ -332,7 +328,6 @@ class ExportService
 
                 $comparisonRow[] = $cell['value'];
 
-                // Citations sheet rows if citation exists
                 $citation = $cell['citation'] ?? null;
                 $hasCitation = $citation && (
                     !empty($citation['page']) ||

@@ -66,7 +66,6 @@ class ComparisonService
                 $cells[(string) $docId] = $cell;
             }
 
-            // Return a simple view-model object-like array
             return (object) [
                 'field_id' => $t->id,
                 'key' => $t->key,
