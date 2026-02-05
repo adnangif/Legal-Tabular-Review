@@ -1,0 +1,3 @@
+﻿"Field Key",Field,Document,Value,Confidence,Status,Source,Conflict,"Citation Page","Citation Chunk UID","Citation Quote"
+governing_law,"Governing Law","Test Contract","New York, USA",0.87,needs_review,extraction,no,7,DOC_001_P7_C1,"This Agreement shall be governed by the laws of New York..."
+effective_date,"Effective Date","Test Contract",,,missing,extraction,no,,,
